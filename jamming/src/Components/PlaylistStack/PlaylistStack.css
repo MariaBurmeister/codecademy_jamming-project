@@ -1,0 +1,8 @@
+.Playlist-Stack .Playlist {
+    width: 100%;
+    margin: auto;
+}
+
+.Playlist-Stack .Playlist TrackList {
+    display: none;
+}
