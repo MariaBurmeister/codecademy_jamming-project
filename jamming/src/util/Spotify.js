@@ -1,6 +1,6 @@
 let userAccessToken;
-const appClientID = '<your spotify app client id here>';
-const redirectURI = 'http://my-playlist-jammer.surge.sh';
+const appClientID = '0a91deef6b544e8fb82641394626025f';
+const redirectURI = 'http://localhost:3000/';
 const spotifyAPI = 'https://api.spotify.com/v1/';
 
 const Spotify = {
@@ -23,6 +23,55 @@ const Spotify = {
         }
         const accessURL = `https://accounts.spotify.com/authorize?client_id=${appClientID}&response_type=token&scope=playlist-modify-public&redirect_uri=${redirectURI}`;
         window.location = accessURL;
+    },
+
+    async getUsersPlaylists() {
+        const userAccessToken = this.getUserAccessToken();
+        const headers = {Authorization: `Bearer ${userAccessToken}`};
+
+        const endPointUser = 'me';
+        const urlGETID = `${spotifyAPI}${endPointUser}`;
+        
+        let userID;
+        let endPointPlaylists;
+        
+        const userIdUrlresponse = await fetch(urlGETID, {headers: headers})
+        const jsonResponse = await userIdUrlresponse.json()
+    
+        userID = jsonResponse.id;
+        endPointPlaylists = `users/${userID}/playlists`;
+        const urlGETPlaylists = `${spotifyAPI}${endPointPlaylists}`;
+
+        const playlistsUrlResponse = await fetch(urlGETPlaylists, {headers: headers})
+        const playlistsJson = await playlistsUrlResponse.json();
+
+        
+        const playlists = [];
+        
+        for (const playlist of playlistsJson.items) {
+            const endPointTracks = `playlists/${playlist.id}/tracks`;
+            const urlGETTracks = `${spotifyAPI}${endPointTracks}`;
+
+            const tracksResponse = await fetch(urlGETTracks, {headers:headers})
+            const tracksJson = await tracksResponse.json()
+
+            playlists.push({
+                id: playlist.id,
+                colaborative: playlist.colaborative,
+                name: playlist.name,
+                tracks: tracksJson.items.map(track => {
+                    
+                    return {
+                    id: track.track.id,
+                    name: track.track.name,
+                    artist: track.track.artists[0].name,
+                    album: track.track.album.name,
+                    uri: track.track.uri
+                }})
+            });
+        }
+
+        return playlists;
     },
 
     async search(searchTerm) {
@@ -51,10 +100,12 @@ const Spotify = {
             }));
         });
         return searchResponse;
-
     },
 
     saveNewPlaylistToAccount(playlistName, trackURIs) {
+        console.log('Entered Save New');
+        console.log(`playlistName ${playlistName}, trackURIs ${trackURIs}`);
+
         if (!playlistName || !trackURIs.length) {
             return;
         }
@@ -85,12 +136,12 @@ const Spotify = {
                 })
                 .then(response=> response.json())
                 .then(jsonResponse=> {
-                    console.log(jsonResponse);
+                    
                     const playlistID = jsonResponse.id;
                     const endpointTracks = `/${playlistID}/tracks`;
-                    const urlPOSTTracks = `${spotifyAPI}${endPointPlaylists}${endpointTracks}`;
+                    const urlPUTTracks = `${spotifyAPI}${endPointPlaylists}${endpointTracks}`;
 
-                    return fetch(urlPOSTTracks, 
+                    return fetch(urlPUTTracks, 
                         {
                             headers: headers,
                             method: 'POST',
@@ -98,7 +149,44 @@ const Spotify = {
                         });
                 });
         });
+    },
+
+    savePlaylistEdit( playlistID, playlistName, trackURIs) {
+        console.log('Entered Save Edit');
+        console.log(`playlistID ${playlistID}, playlistName ${playlistName}, trackURIs ${trackURIs}`);
+
+
+        if (!playlistName || !trackURIs.length) {
+            return;
+        }
+
+        const userAccessToken = this.getUserAccessToken();
+        const headers = {
+            Authorization: `Bearer ${userAccessToken}`,
+            'Content-Type': 'application/json' 
+        };
+    
+        const endPointPlaylists = `playlists/${playlistID}`;
+        const urlPUTName = `${spotifyAPI}${endPointPlaylists}`;
+    
+        fetch(urlPUTName, {
+                headers: headers, 
+                method: 'PUT', 
+                body: JSON.stringify({name: playlistName})
+            });
+                
+        const endpointTracks = `/tracks`;
+        const urlPUTTracks = `${spotifyAPI}${endPointPlaylists}${endpointTracks}`;
+
+        fetch(urlPUTTracks, 
+            {
+                headers: headers,
+                method: 'PUT',
+                body: JSON.stringify({uris: trackURIs})
+            });
     }
+    
 }
+
 
 export default Spotify;
