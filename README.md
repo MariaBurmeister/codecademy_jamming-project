@@ -1,1 +1,2 @@
-# jamming - a spotify playlist builder
+# codecademy jamming project
+a spotify playlist builder using React and Spotify API
