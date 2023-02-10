@@ -1,1 +1,1 @@
-# jamming-spotify-playlist-builder_project_codecademy
+# jamming - a spotify playlist builder
